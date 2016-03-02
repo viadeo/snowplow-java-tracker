@@ -13,13 +13,13 @@
 package com.snowplowanalytics.snowplow.tracker.http;
 
 // Java
-import java.util.Iterator;
-import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 // Google
 import com.google.common.base.Preconditions;
 
 // SquareUp
+import com.google.common.base.Stopwatch;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.MediaType;
@@ -99,14 +99,17 @@ public class OkHttpClientAdapter extends AbstractHttpClientAdapter {
      * @return the HttpResponse for the Request
      */
     public int doGet(String url) {
+        Stopwatch stopwatch = Stopwatch.createStarted();
         Request request = new Request.Builder().url(url).build();
 
         try {
             Response response = httpClient.newCall(request).execute();
             return response.code();
         } catch (Exception e) {
-            LOGGER.error("OkHttpClient GET Request failed: {}", e.getMessage());
+            LOGGER.error("OkHttpClient GET Request failed in " + stopwatch.elapsed(TimeUnit.MILLISECONDS), e);
             return -1;
+        } finally {
+            stopwatch.stop();
         }
     }
 
@@ -119,6 +122,7 @@ public class OkHttpClientAdapter extends AbstractHttpClientAdapter {
      * @return the HttpResponse for the Request
      */
     public int doPost(String url, String payload) {
+        Stopwatch stopwatch = Stopwatch.createStarted();
         try {
             RequestBody body = RequestBody.create(JSON, payload);
             Request request = new Request.Builder()
@@ -129,8 +133,10 @@ public class OkHttpClientAdapter extends AbstractHttpClientAdapter {
             Response response = httpClient.newCall(request).execute();
             return response.code();
         } catch (Exception e) {
-            LOGGER.error("OkHttpClient POST Request failed: {}", e.getMessage());
+            LOGGER.error("OkHttpClient POST Request failed in " + stopwatch.elapsed(TimeUnit.MILLISECONDS), e);
             return -1;
+        } finally {
+            stopwatch.stop();
         }
     }
 }
